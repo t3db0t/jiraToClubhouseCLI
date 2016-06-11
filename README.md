@@ -1,6 +1,6 @@
 # jiraToClubhouseCLI
 
-[Clubhouse.io](http://clubhouse.io) is project management tool. The purpose of this tool is to help export your data out of Jira if you making the switch.
+[Clubhouse.io](http://clubhouse.io) is a cool project management tool. The purpose of this tool is to help export your data out of Jira if you making the switch.
 
 ## Export
 To see what the data will sort of look like.
