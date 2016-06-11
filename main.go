@@ -17,7 +17,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Jira to Clubhouse"
 	app.Usage = "Jira To Clubhouse"
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Commands = []cli.Command{
 		{
 			Name:    "export",
@@ -29,7 +29,7 @@ func main() {
 					Usage: "The Jira XML file you want to read in.",
 				},
 				cli.IntFlag{
-					Name:  "projectId, p",
+					Name:  "projectID, p",
 					Usage: "The project ID you want these items imported for",
 				},
 				cli.StringFlag{
@@ -40,7 +40,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				jiraFile := c.String("in")
 				exportFile := c.String("out")
-				projectId := c.Int("projectId")
+				projectID := c.Int("projectID")
 
 				if jiraFile == "" {
 					fmt.Println("An input file must be specified.")
@@ -52,11 +52,11 @@ func main() {
 					return nil
 				}
 
-				if projectId == 0 {
-					fmt.Println("A projectId must be specified.")
+				if projectID == 0 {
+					fmt.Println("A projectID must be specified.")
 					return nil
 				}
-				err := ExportToJSON(jiraFile, int64(projectId), exportFile)
+				err := ExportToJSON(jiraFile, int64(projectID), exportFile)
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -73,7 +73,7 @@ func main() {
 					Usage: "The Jira XML file you want to read in.",
 				},
 				cli.IntFlag{
-					Name:  "projectId, p",
+					Name:  "projectID, p",
 					Usage: "The project ID you want these items imported for",
 				},
 				cli.StringFlag{
@@ -84,7 +84,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				jiraFile := c.String("in")
 				token := c.String("token")
-				projectId := c.Int("projectId")
+				projectID := c.Int("projectID")
 
 				if jiraFile == "" {
 					fmt.Println("An input file must be specified.")
@@ -96,11 +96,11 @@ func main() {
 					return nil
 				}
 
-				if projectId == 0 {
-					fmt.Println("A projectId must be specified.")
+				if projectID == 0 {
+					fmt.Println("A projectID must be specified.")
 					return nil
 				}
-				err := UploadToClubhouse(jiraFile, int64(projectId), token)
+				err := UploadToClubhouse(jiraFile, int64(projectID), token)
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -112,6 +112,7 @@ func main() {
 	app.Run(os.Args)
 }
 
+// GetStoryJSONByteArray will marshal the JSON object and remove empty epic links. ("epic_id":0)
 func GetStoryJSONByteArray(data ClubHouseCreateStory) ([]byte, error) {
 	jsonObj, err := json.Marshal(data)
 	if err != nil {
@@ -121,12 +122,13 @@ func GetStoryJSONByteArray(data ClubHouseCreateStory) ([]byte, error) {
 	return []byte(jsonStr), nil
 }
 
-func ExportToJSON(jiraFile string, projectId int64, exportFile string) error {
+// ExportToJSON will import the XML and then export the data to the file specified.
+func ExportToJSON(jiraFile string, projectID int64, exportFile string) error {
 	export, err := GetDataFromXMLFile(jiraFile)
 	if err != nil {
 		return err
 	}
-	data, err := json.Marshal(export.GetDataForClubhouse(projectId))
+	data, err := json.Marshal(export.GetDataForClubhouse(projectID))
 	if err != nil {
 		return err
 	}
@@ -137,12 +139,13 @@ func ExportToJSON(jiraFile string, projectId int64, exportFile string) error {
 	return nil
 }
 
-func UploadToClubhouse(jiraFile string, projectId int64, token string) error {
+// UploadToClubhouse will import the XML, and upload it to Clubhouse
+func UploadToClubhouse(jiraFile string, projectID int64, token string) error {
 	export, err := GetDataFromXMLFile(jiraFile)
 	if err != nil {
 		return err
 	}
-	data := export.GetDataForClubhouse(projectId)
+	data := export.GetDataForClubhouse(projectID)
 	err = SendData(token, data)
 	if err != nil {
 		return err
@@ -150,12 +153,16 @@ func UploadToClubhouse(jiraFile string, projectId int64, token string) error {
 	return nil
 }
 
+// SendData will send the data to Clubhouse
 func SendData(token string, data ClubHouseData) error {
+	// epicMap is used to get the return from the submitting of the ClubHouseCreateEpic to get the ID created by the API so stories can be mapped to the correct epic.
 	epicMap := make(map[string]int64)
+
 	client := &http.Client{}
+
 	for _, epic := range data.Epics {
 		jsonStr, _ := json.Marshal(epic)
-		req, err := http.NewRequest("POST", GetUrl("epics", token), bytes.NewBuffer(jsonStr))
+		req, err := http.NewRequest("POST", GetURL("epics", token), bytes.NewBuffer(jsonStr))
 		if err != nil {
 			return err
 		}
@@ -172,17 +179,18 @@ func SendData(token string, data ClubHouseData) error {
 		body, _ := ioutil.ReadAll(resp.Body)
 		newEpic := ClubHouseEpic{}
 		json.Unmarshal(body, &newEpic)
-		epicMap[epic.key] = newEpic.Id
+		epicMap[epic.key] = newEpic.ID
 	}
+
 	for _, story := range data.Stories {
 		if story.epicLink != "" {
-			story.EpicId = epicMap[story.epicLink]
+			story.EpicID = epicMap[story.epicLink]
 		}
 		jsonObj, err := GetStoryJSONByteArray(story)
 		if err != nil {
 			return err
 		}
-		req, err := http.NewRequest("POST", GetUrl("stories", token), bytes.NewBuffer(jsonObj))
+		req, err := http.NewRequest("POST", GetURL("stories", token), bytes.NewBuffer(jsonObj))
 		if err != nil {
 			return err
 		}
@@ -202,24 +210,29 @@ func SendData(token string, data ClubHouseData) error {
 	return nil
 }
 
-func GetUrl(kind string, token string) string {
+// GetURL will get the use the REST API v1 address, the resource provided and the API token to get the URL for transactions
+func GetURL(kind string, token string) string {
 	return fmt.Sprintf("%s%s?token=%s", "https://api.clubhouse.io/api/v1/", kind, token)
 }
 
+// GetDataFromXMLFile will Unmarshal the XML file into the objects used by the application.
 func GetDataFromXMLFile(jiraFile string) (JiraExport, error) {
 	xmlFile, err := os.Open(jiraFile)
 	if err != nil {
 		return JiraExport{}, err
 	}
+
 	defer xmlFile.Close()
 	XMLData, err := ioutil.ReadAll(xmlFile)
 	if err != nil {
 		return JiraExport{}, err
 	}
+
 	jiraExport := JiraExport{}
 	err = xml.Unmarshal(XMLData, &jiraExport)
 	if err != nil {
 		return JiraExport{}, err
 	}
+
 	return jiraExport, nil
 }

@@ -9,11 +9,13 @@ import (
 	"github.com/kennygrant/sanitize"
 )
 
+// JiraExport is the container of Jira Items from the XML.
 type JiraExport struct {
 	ElementName xml.Name   `xml:"rss"`
 	Items       []JiraItem `xml:"channel>item"`
 }
 
+// JiraItem is the struct for a basic item imported from the XML
 type JiraItem struct {
 	Assignee        string   `xml:"assignee"`
 	CreatedAtString string   `xml:"created"`
@@ -29,27 +31,32 @@ type JiraItem struct {
 	Type            string   `xml:"type"`
 	Parent          string   `xml:"parent"`
 
-	Comments     []JiraComment      `xml:"comments>comment"`
-	CustomFields []JiraCustomFields `xml:"customfields>customfield"`
+	Comments     []JiraComment     `xml:"comments>comment"`
+	CustomFields []JiraCustomField `xml:"customfields>customfield"`
 
 	epicLink string
 }
 
-type JiraCustomFields struct {
+//JiraCustomField is the information for custom fields. Right now the only one used is the Epic Link
+type JiraCustomField struct {
 	FieldName  string   `xml:"customfieldname"`
 	FieldVales []string `xml:"customfieldvalues>customfieldvalue"`
 }
+
+// JiraComment is a comment from the imported XML
 type JiraComment struct {
 	Author          string `xml:"author,attr"`
 	CreatedAtString string `xml:"created,attr"`
 	Comment         string `xml:",chardata"`
-	Id              string `xml:"id,attr"`
+	ID              string `xml:"id,attr"`
 }
 
-func (je *JiraExport) GetDataForClubhouse(projectId int64) ClubHouseData {
+//GetDataForClubhouse will take the data from the XML and translate it into a format for sending to Clubhouse
+func (je *JiraExport) GetDataForClubhouse(projectID int64) ClubHouseData {
 	epics := []JiraItem{}
 	tasks := []JiraItem{}
 	stories := []JiraItem{}
+
 	for _, item := range je.Items {
 		switch item.Type {
 		case "Epic":
@@ -63,46 +70,54 @@ func (je *JiraExport) GetDataForClubhouse(projectId int64) ClubHouseData {
 			break
 		}
 	}
+
 	chEpics := []ClubHouseCreateEpic{}
+
 	for _, item := range epics {
 		chEpics = append(chEpics, item.CreateEpic())
 	}
+
 	chTasks := []ClubHouseCreateTask{}
 	chStories := []ClubHouseCreateStory{}
+
 	for _, item := range tasks {
 		chTasks = append(chTasks, item.CreateTask())
-		// if item.Description != "" || len(item.Comments) > 0 {
-		// 	chStories = append(chStories, item.CreateStory(projectId))
-		// } else {
-		// 	chTasks = append(chTasks, item.CreateTask())
-		// }
 	}
+
 	for _, item := range stories {
-		chStories = append(chStories, item.CreateStory(projectId))
+		chStories = append(chStories, item.CreateStory(projectID))
 	}
+
+	// storyMap is used to link the JiraItem's key to its index in the chStories slice. This is then used to assign subtasks properly
 	storyMap := make(map[string]int)
 	for i, item := range chStories {
 		storyMap[item.key] = i
 	}
+
 	for _, task := range chTasks {
 		chStories[storyMap[task.parent]].Tasks = append(chStories[storyMap[task.parent]].Tasks, task)
 	}
+
 	return ClubHouseData{Epics: chEpics, Stories: chStories}
 }
 
+// CreateEpic returns a ClubHouseCreateEpic from the JiraItem
 func (item *JiraItem) CreateEpic() ClubHouseCreateEpic {
 	return ClubHouseCreateEpic{Description: sanitize.HTML(item.Description), Name: sanitize.HTML(item.Summary), key: item.Key, CreatedAt: ParseJiraTimeStamp(item.CreatedAtString)}
 }
 
+// CreateTask returns a task if the item is a Jira Sub-task
 func (item *JiraItem) CreateTask() ClubHouseCreateTask {
 	return ClubHouseCreateTask{Description: sanitize.HTML(item.Summary), parent: item.Parent, Complete: false}
 }
 
-func (item *JiraItem) CreateStory(projectId int64) ClubHouseCreateStory {
-	comments := []CreateComment{}
+// CreateStory returns a ClubHouseCreateStory from the JiraItem
+func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
+	comments := []ClubHouseCreateComment{}
 	for _, c := range item.Comments {
 		comments = append(comments, c.CreateComment())
 	}
+
 	labels := []ClubHouseCreateLabel{}
 	for _, label := range item.Labels {
 		labels = append(labels, ClubHouseCreateLabel{Name: strings.ToLower(label)})
@@ -114,16 +129,18 @@ func (item *JiraItem) CreateStory(projectId int64) ClubHouseCreateStory {
 		Description: sanitize.HTML(item.Description),
 		Labels:      labels,
 		Name:        sanitize.HTML(item.Summary),
-		ProjectId:   projectId,
+		ProjectID:   projectID,
 		StoryType:   item.GetClubhouseType(),
 		key:         item.Key,
 		epicLink:    item.GetEpicLink()}
 }
 
-func (comment *JiraComment) CreateComment() CreateComment {
-	return CreateComment{Text: fmt.Sprintf("%s: %s", comment.Author, sanitize.HTML(comment.Comment)), CreatedAt: ParseJiraTimeStamp(comment.CreatedAtString)}
+// CreateComment takes the JiraItem's comment data and returns a ClubHouseCreateComment
+func (comment *JiraComment) CreateComment() ClubHouseCreateComment {
+	return ClubHouseCreateComment{Text: fmt.Sprintf("%s: %s", comment.Author, sanitize.HTML(comment.Comment)), CreatedAt: ParseJiraTimeStamp(comment.CreatedAtString)}
 }
 
+// GetEpicLink returns the Epic Link of a Jira Item.
 func (item *JiraItem) GetEpicLink() string {
 	for _, cf := range item.CustomFields {
 		if cf.FieldName == "Epic Link" {
@@ -133,6 +150,7 @@ func (item *JiraItem) GetEpicLink() string {
 	return ""
 }
 
+// GetClubhouseType determines type based on if the Jira item is a bug or not.
 func (item *JiraItem) GetClubhouseType() string {
 	if item.Type == "Bug" {
 		return "bug"
@@ -140,6 +158,7 @@ func (item *JiraItem) GetClubhouseType() string {
 	return "feature"
 }
 
+// ParseJiraTimeStamp parses the format in the XML using Go's magical timestamp.
 func ParseJiraTimeStamp(dateString string) time.Time {
 	format := "Mon, 2 Jan 2006 15:04:05 -0700"
 	t, err := time.Parse(format, dateString)

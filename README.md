@@ -6,13 +6,13 @@
 To see what the data will sort of look like.
 
 ```bash
-go run *.go export --in SearchRequest.xml --projectId 5 --out file.json
+go run *.go export --in SearchRequest.xml --projectID 5 --out file.json
 ```
 
 
 ### Params
  * `--in` The xml file you want to read from
- * `--projectId` the project Id you want to use for the items you are importing
+ * `--projectID` the project ID you want to use for the items you are importing
  * `--out` The file you want to export the JSOn to.
 
 ## Import
@@ -20,10 +20,10 @@ go run *.go export --in SearchRequest.xml --projectId 5 --out file.json
 To actually import to Clubhouse
 
 ```bash
-go run *.go import --in SearchRequest.xml --projectId 5 --token jgjjgjgkkjgjkgjk
+go run *.go import --in SearchRequest.xml --projectID 5 --token jgjjgjgkkjgjkgjk
 ```
 
 ### Params
  * `--in` The xml file you want to read from
- * `--projectId` the project Id you want to use for the items you are importing
+ * `--projectID` the project ID you want to use for the items you are importing
  * `--token` The api token for your Clubhouse instance
