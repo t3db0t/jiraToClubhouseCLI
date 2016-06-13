@@ -27,7 +27,7 @@ type ClubHouseCreateStory struct {
 	CreatedAt   time.Time                `json:"created_at"`
 	Description string                   `json:"description"`
 	Estimate    int64                    `json:"estimate"`
-	EpicID      int64                    `json:"epic_id"`
+	EpicID      int64                    `json:"epic_id,omitempty"`
 	Labels      []ClubHouseCreateLabel   `json:"labels"`
 	Name        string                   `json:"name"`
 	ProjectID   int64                    `json:"project_id"`

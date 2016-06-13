@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/urfave/cli"
 )
@@ -17,7 +16,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Jira to Clubhouse"
 	app.Usage = "Jira To Clubhouse"
-	app.Version = "0.0.2"
+	app.Version = "0.0.3"
 	app.Commands = []cli.Command{
 		{
 			Name:    "export",
@@ -112,16 +111,6 @@ func main() {
 	app.Run(os.Args)
 }
 
-// GetStoryJSONByteArray will marshal the JSON object and remove empty epic links. ("epic_id":0)
-func GetStoryJSONByteArray(data ClubHouseCreateStory) ([]byte, error) {
-	jsonObj, err := json.Marshal(data)
-	if err != nil {
-		return []byte{}, err
-	}
-	jsonStr := strings.Replace(string(jsonObj), "\"epic_id\":0,", "", -1)
-	return []byte(jsonStr), nil
-}
-
 // ExportToJSON will import the XML and then export the data to the file specified.
 func ExportToJSON(jiraFile string, projectID int64, exportFile string) error {
 	export, err := GetDataFromXMLFile(jiraFile)
@@ -186,11 +175,11 @@ func SendData(token string, data ClubHouseData) error {
 		if story.epicLink != "" {
 			story.EpicID = epicMap[story.epicLink]
 		}
-		jsonObj, err := GetStoryJSONByteArray(story)
+		jsonStr, err := json.Marshal(story)
 		if err != nil {
 			return err
 		}
-		req, err := http.NewRequest("POST", GetURL("stories", token), bytes.NewBuffer(jsonObj))
+		req, err := http.NewRequest("POST", GetURL("stories", token), bytes.NewBuffer(jsonStr))
 		if err != nil {
 			return err
 		}
