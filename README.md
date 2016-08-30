@@ -12,7 +12,7 @@ go run *.go export --in SearchRequest.xml --projectID 5 --out file.json
 
 ### Params
  * `--in` The xml file you want to read from
- * `--projectID` the project ID you want to use for the items you are importing
+ * `--projectID` the Clubhouse project ID you want to use for the items you are importing
  * `--out` The file you want to export the JSOn to.
 
 ## Import
@@ -25,5 +25,5 @@ go run *.go import --in SearchRequest.xml --projectID 5 --token jgjjgjgkkjgjkgjk
 
 ### Params
  * `--in` The xml file you want to read from
- * `--projectID` the project ID you want to use for the items you are importing
+ * `--projectID` the Clubhouse project ID you want to use for the items you are importing
  * `--token` The api token for your Clubhouse instance

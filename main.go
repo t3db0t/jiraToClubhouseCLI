@@ -16,7 +16,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Jira to Clubhouse"
 	app.Usage = "Jira To Clubhouse"
-	app.Version = "0.0.3"
+	app.Version = "0.0.4"
 	app.Commands = []cli.Command{
 		{
 			Name:    "export",
@@ -29,7 +29,7 @@ func main() {
 				},
 				cli.IntFlag{
 					Name:  "projectID, p",
-					Usage: "The project ID you want these items imported for",
+					Usage: "The Clubhouse project ID you want these items imported for",
 				},
 				cli.StringFlag{
 					Name:  "out, o",
