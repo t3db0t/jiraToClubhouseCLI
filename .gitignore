@@ -23,5 +23,6 @@ _testmain.go
 *.test
 *.prof
 
-SearchRequest.xml
-file.json
+*.xml
+*.json
+notes.txt

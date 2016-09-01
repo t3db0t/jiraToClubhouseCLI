@@ -23,18 +23,20 @@ type ClubHouseCreateComment struct {
 
 // ClubHouseCreateStory is the object sent to API to submit a Story, Tasks, & Comment
 type ClubHouseCreateStory struct {
-	Comments    []ClubHouseCreateComment `json:"comments"`
-	CreatedAt   time.Time                `json:"created_at"`
-	Description string                   `json:"description"`
-	Estimate    int64                    `json:"estimate"`
-	EpicID      int64                    `json:"epic_id,omitempty"`
-	Labels      []ClubHouseCreateLabel   `json:"labels"`
-	Name        string                   `json:"name"`
-	ProjectID   int64                    `json:"project_id"`
-	Tasks       []ClubHouseCreateTask    `json:"tasks"`
-	StoryType   string                   `json:"story_type"`
-	epicLink    string
-	key         string
+	Comments    	[]ClubHouseCreateComment `json:"comments"`
+	CreatedAt   	time.Time                `json:"created_at"`
+	Description 	string                   `json:"description"`
+	Estimate    	int64                    `json:"estimate"`
+	EpicID      	int64                    `json:"epic_id,omitempty"`
+	Labels      	[]ClubHouseCreateLabel   `json:"labels"`
+	Name        	string                   `json:"name"`
+	ProjectID   	int64                    `json:"project_id"`
+	Tasks       	[]ClubHouseCreateTask    `json:"tasks"`
+	StoryType   	string                   `json:"story_type"`
+	epicLink    	string
+	key         	string
+	OwnerIDs		[]string				 `json:"owner_ids"`
+	WorkflowState	int64					 `json:"workflow_state_id"`
 }
 
 // ClubHouseCreateLabel is used to submit labels with stories, it looks like from the API that duplicates will not be created.

@@ -123,16 +123,82 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 		labels = append(labels, ClubHouseCreateLabel{Name: strings.ToLower(label)})
 	}
 
+	/* Overwrite supplied Project ID
+	   if assigned to loz, Frontend-Import
+	   if item.Summary starts with "FE: ", Frontend-Import
+	   if item.Summary contains "Touch", Touch
+	   etc
+
+	- "Backend-Import": 241
+	- "Frontend-Import": 242
+	- "Gateway-Import": 243
+	- Touch: 19
+
+	*/
+
+	// Map JIRA assignee to Clubhouse owner(s)
+	// var owners []string
+	fmt.Println(item.Assignee)
+	// switch item.Assignee {
+	//     case "10200":
+	//         // ready for test
+	//         state := 500000010
+	//     case "3":
+	//         // in progress
+	//         state := 500000015
+	//     case "10101":
+	//     	// selected
+	//     	state := 500000011
+	//     case "10100":
+	//     	// backlog
+	//         state := 500000014
+	//     case "":
+	//     	// done/completed
+	//     	state := 500000012
+	//     default:
+	//     	// backlog
+	//         state := 500000014
+ //    }
+	// append(owners, owner)
+
+	// Map JIRA status to Clubhouse Workflow state
+	// cases break automatically, no fallthrough by default
+	fmt.Println(item.Status)
+	var state int64 = 500000014
+	switch item.Status {
+	    case "10200":
+	        // ready for test
+	        state = 500000010
+	    case "3":
+	        // in progress
+	        state = 500000015
+	    case "10101":
+	    	// selected
+	    	state = 500000011
+	    case "10100":
+	    	// backlog
+	        state = 500000014
+	    case "":
+	    	// done/completed
+	    	state = 500000012
+	    default:
+	    	// backlog
+	        state = 500000014
+    }
+
 	return ClubHouseCreateStory{
-		Comments:    comments,
-		CreatedAt:   ParseJiraTimeStamp(item.CreatedAtString),
-		Description: sanitize.HTML(item.Description),
-		Labels:      labels,
-		Name:        sanitize.HTML(item.Summary),
-		ProjectID:   projectID,
-		StoryType:   item.GetClubhouseType(),
-		key:         item.Key,
-		epicLink:    item.GetEpicLink()}
+		Comments:    	comments,
+		CreatedAt:   	ParseJiraTimeStamp(item.CreatedAtString),
+		Description: 	sanitize.HTML(item.Description),
+		Labels:      	labels,
+		Name:        	sanitize.HTML(item.Summary),
+		ProjectID:   	projectID,
+		StoryType:   	item.GetClubhouseType(),
+		key:         	item.Key,
+		epicLink:    	item.GetEpicLink(),
+		WorkflowState:	state,
+		// OwnerIDs:		owners
+	}
 }
 
 // CreateComment takes the JiraItem's comment data and returns a ClubHouseCreateComment
