@@ -15,21 +15,29 @@ type JiraExport struct {
 	Items       []JiraItem `xml:"channel>item"`
 }
 
+type JiraAssignee struct {
+	Username		string	`xml:"username,attr"`
+}
+
+type JiraReporter struct {
+	Username		string	`xml:"username,attr"`
+}
+
 // JiraItem is the struct for a basic item imported from the XML
 type JiraItem struct {
-	Assignee        string   `xml:"assignee"`
-	CreatedAtString string   `xml:"created"`
-	Description     string   `xml:"description"`
-	Key             string   `xml:"key"`
-	Labels          []string `xml:"labels>label"`
-	Project         string   `xml:"project"`
-	Resolution      string   `xml:"resolution"`
-	Reporter        string   `xml:"reporter"`
-	Status          string   `xml:"status"`
-	Summary         string   `xml:"summary"`
-	Title           string   `xml:"title"`
-	Type            string   `xml:"type"`
-	Parent          string   `xml:"parent"`
+	Assignee        JiraAssignee   `xml:"assignee"`
+	CreatedAtString string   		`xml:"created"`
+	Description     string   		`xml:"description"`
+	Key             string   		`xml:"key"`
+	Labels          []string 		`xml:"labels>label"`
+	Project         string   		`xml:"project"`
+	Resolution      string   		`xml:"resolution"`
+	Reporter        JiraReporter  	`xml:"reporter"`
+	Status          string   		`xml:"status"`
+	Summary         string   		`xml:"summary"`
+	Title           string   		`xml:"title"`
+	Type            string   		`xml:"type"`
+	Parent          string   		`xml:"parent"`
 
 	Comments     []JiraComment     `xml:"comments>comment"`
 	CustomFields []JiraCustomField `xml:"customfields>customfield"`
@@ -113,6 +121,9 @@ func (item *JiraItem) CreateTask() ClubHouseCreateTask {
 
 // CreateStory returns a ClubHouseCreateStory from the JiraItem
 func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
+	// fmt.Println("assignee: ", item.Assignee, "reporter: ", item.Reporter)
+	// return ClubHouseCreateStory{}
+
 	comments := []ClubHouseCreateComment{}
 	for _, c := range item.Comments {
 		comments = append(comments, c.CreateComment())
@@ -122,16 +133,17 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	for _, label := range item.Labels {
 		labels = append(labels, ClubHouseCreateLabel{Name: strings.ToLower(label)})
 	}
+	// Adding special label that indicates that it was imported from JIRA
+	labels = append(labels, ClubHouseCreateLabel{Name: "JIRA"})
 
 	// Overwrite supplied Project ID
-	projectID = MapProject(item.Assignee)
+	projectID = MapProject(item.Assignee.Username)
 
 	// Map JIRA assignee to Clubhouse owner(s)
-	owners := []string{MapUser(item.Assignee)}
+	owners := []string{MapUser(item.Assignee.Username)}
 
 	// Map JIRA status to Clubhouse Workflow state
 	// cases break automatically, no fallthrough by default
-	fmt.Println(item.Status)
 	var state int64 = 500000014
 	switch item.Status {
 	    case "Ready for Test":
@@ -159,7 +171,7 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	        state = 500000014
     }
 
-    fmt.Println("Creating Story id: ", item.Key)
+    fmt.Printf("Creating story from %s: JIRA username: %s | Project: %d | Status: %s\n\n", item.Key, item.Assignee.Username, projectID, item.Status)
 
 	return ClubHouseCreateStory{
 		Comments:    	comments,
@@ -173,41 +185,66 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 		epicLink:    	item.GetEpicLink(),
 		WorkflowState:	state,
 		OwnerIDs:		owners,
+		RequestedBy:	MapUser(item.Reporter.Username),
 	}
 }
 
 func MapUser(jiraUserName string) string {
 	switch jiraUserName {
-	    case "Laurence Tunnicliffe":
+	    case "loz":
 	        return "57c9ac5a-4762-46bc-bbfd-67d64bc8e7be"
-	    case "Ted Case-Hayes":
+
+	    case "ted":
 	        return "570fd3d0-55a2-49f6-9352-2ddb51ef8dd1"
-	    case "Bruce Woodson":
+
+	    case "bruce.woodson":
 	    	return "57c9a89c-d59d-4bad-aa9b-b5a0a51d8217"
-	    case "Carlos Chinchilla":
+
+	    case "carlosc":
 	        return "57c9b22b-6bf4-460b-9778-764355a0bc28"
-	    case "Pavlo Naumenko":
+
+	    case "pavlo.naumenko":
 	    	return "57c9c753-5ddc-41b2-93e7-9f4474d82380"
-	    case "Yuchao Chen":
+	    
+	    case "yuchao.chen":
 	    	return "57c9b277-47b1-4277-a92a-364e07871c46"
-	    case "Dmitriy Kropivnitskiy":
+	    
+	    case "dmitriy":
 	    	return ""
-	    case "Yuri Cantor":
+
+	    case "yuri.cantor":
 	    	return "57c9b19b-917a-457d-a4be-7a1d12990305"
-	    case "Hyoung Kim":
+	    
+	    case "hyoung.kim":
 	    	return "57c9ab13-9a97-44a9-bfbe-2971cabcab9f"
-	    case "James Birk":
+	    
+	    case "jamesb":
 	    	return "57c9c7ae-4f1b-4685-826c-26056923460e"
-    	case "Jason Oliver":
+    	
+    	case "jason.oliver":
 	    	return "57680d04-f3f5-4dcc-bcd7-06cd79452398"
-	    case "Mikhail Efroimson":
+	    
+	    case "mikhail":
 	    	return "576ad70f-0df0-4649-bbb7-aa48cb024c2f"
-	    case "Britton Sparks":
+	    
+	    case "britton.sparks":
 	    	return "578d49c3-b68f-4ca6-98bd-743545e8a8e9"
-	    case "Thomas Toker":
+	    
+	    case "thomast":
 	    	return "577d43f6-e069-417d-ba40-5704ba82dc7c"
-	    case "Vadym Lipinsky":
+	    
+	    case "vadym.lipinsky":
 	    	return "57c9a83f-f360-4f01-a667-5eb632394ff1"
+
+	    case "zach.mihalko":
+	    	return ""
+
+	    case "gregmihalko":
+	    	return ""
+
+	    case "jeremy.leon":
+	    	return ""
+	    
 	    default:
 	    	fmt.Println("[MapUser] JIRA Assignee not found: ", jiraUserName)
 	    	return ""
@@ -235,35 +272,41 @@ func MapUser(jiraUserName string) string {
 
 func MapProject(jiraUserName string) int64 {
 	switch jiraUserName {
-	    case "Laurence Tunnicliffe":
-	        return 5
-	    case "Ted Case-Hayes":
-	        return 81
-	    case "Bruce Woodson":
-	    	return 6
-	    case "Carlos Chinchilla":
-	        return 7
-	    case "Pavlo Naumenko":
-	    	return 246
-	    case "Yuchao Chen":
+	    case "loz":
 	    	return 5
-	    case "Dmitriy Kropivnitskiy":
-	    	return 6
-	    case "Yuri Cantor":
-	    	return 298
-	    case "Hyoung Kim":
-	    	return 19
-	    case "James Birk":
-	    	return 298
-    	case "Jason Oliver":
+	    case "ted":
 	    	return 81
-	    case "Mikhail Efroimson":
+	    case "bruce.woodson":
+	    	return 6
+	    case "carlosc":
+	        return 7
+	    case "pavlo.naumenko":
+	    	return 246
+	    case "yuchao.chen":
+	    	return 5
+	    case "dmitriy":
+	    	return 6
+	    case "yuri.cantor":
+	    	return 298
+	    case "hyoung.kim":
+	    	return 19
+	    case "jamesb":
+	    	return 298
+    	case "jason.oliver":
+	    	return 81
+	    case "mikhail":
 	    	return 7
-	    case "Britton Sparks":
+	    case "britton.sparks":
 	    	return 295
-	    case "Thomas Toker":
+	    case "thomast":
 	    	return 295
-	    case "Vadym Lipinsky":
+	    case "vadym.lipinsky":
+	    	return 287
+	    case "zach.mihalko":
+	    	return 318
+	    case "gregmihalko":
+	    	return 318
+	    case "jeremy.leon":
 	    	return 287
 	    default:
 	    	fmt.Println("[MapProject] JIRA Assignee not found: ", jiraUserName)

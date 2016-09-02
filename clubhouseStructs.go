@@ -38,6 +38,7 @@ type ClubHouseCreateStory struct {
 	key         	string
 	OwnerIDs		[]string				 `json:"owner_ids"`
 	WorkflowState	int64					 `json:"workflow_state_id"`
+	RequestedBy		string					 `json:"requested_by_id"`
 }
 
 // ClubHouseCreateLabel is used to submit labels with stories, it looks like from the API that duplicates will not be created.

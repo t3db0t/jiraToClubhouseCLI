@@ -79,11 +79,17 @@ func main() {
 					Name:  "token, t",
 					Usage: "Your API token",
 				},
+				cli.BoolFlag{
+					Name:  "test, T",
+					Hidden: false,
+					Usage: "Test mode: Does not execute remote requests",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				jiraFile := c.String("in")
 				token := c.String("token")
 				projectID := c.Int("projectID")
+				testMode := c.Bool("test")
 
 				if jiraFile == "" {
 					fmt.Println("An input file must be specified.")
@@ -99,7 +105,8 @@ func main() {
 					fmt.Println("A projectID must be specified.")
 					return nil
 				}
-				err := UploadToClubhouse(jiraFile, int64(projectID), token)
+
+				err := UploadToClubhouse(jiraFile, int64(projectID), token, testMode)
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -129,15 +136,19 @@ func ExportToJSON(jiraFile string, projectID int64, exportFile string) error {
 }
 
 // UploadToClubhouse will import the XML, and upload it to Clubhouse
-func UploadToClubhouse(jiraFile string, projectID int64, token string) error {
+func UploadToClubhouse(jiraFile string, projectID int64, token string, testMode bool) error {
 	export, err := GetDataFromXMLFile(jiraFile)
 	if err != nil {
 		return err
 	}
 	data := export.GetDataForClubhouse(projectID)
-	err = SendData(token, data)
-	if err != nil {
-		return err
+	
+	if !testMode{
+		fmt.Println("Sending data to Clubhouse...")
+		err = SendData(token, data)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
