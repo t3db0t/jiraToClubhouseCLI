@@ -123,68 +123,43 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 		labels = append(labels, ClubHouseCreateLabel{Name: strings.ToLower(label)})
 	}
 
-	/* Overwrite supplied Project ID
-	   if assigned to loz, Frontend-Import
-	   if item.Summary starts with "FE: ", Frontend-Import
-	   if item.Summary contains "Touch", Touch
-	   etc
-
-	- "Backend-Import": 241
-	- "Frontend-Import": 242
-	- "Gateway-Import": 243
-	- Touch: 19
-
-	*/
+	// Overwrite supplied Project ID
+	projectID = MapProject(item.Assignee)
 
 	// Map JIRA assignee to Clubhouse owner(s)
-	// var owners []string
-	fmt.Println(item.Assignee)
-	// switch item.Assignee {
-	//     case "10200":
-	//         // ready for test
-	//         state := 500000010
-	//     case "3":
-	//         // in progress
-	//         state := 500000015
-	//     case "10101":
-	//     	// selected
-	//     	state := 500000011
-	//     case "10100":
-	//     	// backlog
-	//         state := 500000014
-	//     case "":
-	//     	// done/completed
-	//     	state := 500000012
-	//     default:
-	//     	// backlog
-	//         state := 500000014
- //    }
-	// append(owners, owner)
+	owners := []string{MapUser(item.Assignee)}
 
 	// Map JIRA status to Clubhouse Workflow state
 	// cases break automatically, no fallthrough by default
 	fmt.Println(item.Status)
 	var state int64 = 500000014
 	switch item.Status {
-	    case "10200":
+	    case "Ready for Test":
 	        // ready for test
 	        state = 500000010
-	    case "3":
+	    case "Task In Progress":
 	        // in progress
 	        state = 500000015
-	    case "10101":
+	    case "Selected for Review/Development":
 	    	// selected
 	    	state = 500000011
-	    case "10100":
+	    case "Task backlog":
 	    	// backlog
 	        state = 500000014
-	    case "":
-	    	// done/completed
+	    case "Done":
+	    	// Completed
 	    	state = 500000012
+	    case "Verified":
+	    	// Completed
+	    	state = 500000012
+	    case "Closed":
+	    	state = 500000021
 	    default:
 	    	// backlog
 	        state = 500000014
     }
+
+    fmt.Println("Creating Story id: ", item.Key)
 
 	return ClubHouseCreateStory{
 		Comments:    	comments,
@@ -197,13 +172,113 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 		key:         	item.Key,
 		epicLink:    	item.GetEpicLink(),
 		WorkflowState:	state,
-		// OwnerIDs:		owners
+		OwnerIDs:		owners,
 	}
 }
 
+func MapUser(jiraUserName string) string {
+	switch jiraUserName {
+	    case "Laurence Tunnicliffe":
+	        return "57c9ac5a-4762-46bc-bbfd-67d64bc8e7be"
+	    case "Ted Case-Hayes":
+	        return "570fd3d0-55a2-49f6-9352-2ddb51ef8dd1"
+	    case "Bruce Woodson":
+	    	return "57c9a89c-d59d-4bad-aa9b-b5a0a51d8217"
+	    case "Carlos Chinchilla":
+	        return "57c9b22b-6bf4-460b-9778-764355a0bc28"
+	    case "Pavlo Naumenko":
+	    	return "57c9c753-5ddc-41b2-93e7-9f4474d82380"
+	    case "Yuchao Chen":
+	    	return "57c9b277-47b1-4277-a92a-364e07871c46"
+	    case "Dmitriy Kropivnitskiy":
+	    	return ""
+	    case "Yuri Cantor":
+	    	return "57c9b19b-917a-457d-a4be-7a1d12990305"
+	    case "Hyoung Kim":
+	    	return "57c9ab13-9a97-44a9-bfbe-2971cabcab9f"
+	    case "James Birk":
+	    	return "57c9c7ae-4f1b-4685-826c-26056923460e"
+    	case "Jason Oliver":
+	    	return "57680d04-f3f5-4dcc-bcd7-06cd79452398"
+	    case "Mikhail Efroimson":
+	    	return "576ad70f-0df0-4649-bbb7-aa48cb024c2f"
+	    case "Britton Sparks":
+	    	return "578d49c3-b68f-4ca6-98bd-743545e8a8e9"
+	    case "Thomas Toker":
+	    	return "577d43f6-e069-417d-ba40-5704ba82dc7c"
+	    case "Vadym Lipinsky":
+	    	return "57c9a83f-f360-4f01-a667-5eb632394ff1"
+	    default:
+	    	fmt.Println("[MapUser] JIRA Assignee not found: ", jiraUserName)
+	    	return ""
+    }
+}
+
+/* Overwrite supplied Project ID
+	   if assigned to loz, Frontend-Import
+	   if item.Summary starts with "FE: ", Frontend-Import
+	   if item.Summary contains "Touch", Touch
+	   etc
+
+	- Frontend: 5
+	- Backend: 6
+	- Gateway: 7
+	- Touch: 19
+	- Android App: 277
+	- New Products (Ted): 81
+	- QA: 295
+	- QA Automation: 287
+	- iOS App: 246
+	- Infrastructure: 298
+	- Misc: 299
+	*/
+
+func MapProject(jiraUserName string) int64 {
+	switch jiraUserName {
+	    case "Laurence Tunnicliffe":
+	        return 5
+	    case "Ted Case-Hayes":
+	        return 81
+	    case "Bruce Woodson":
+	    	return 6
+	    case "Carlos Chinchilla":
+	        return 7
+	    case "Pavlo Naumenko":
+	    	return 246
+	    case "Yuchao Chen":
+	    	return 5
+	    case "Dmitriy Kropivnitskiy":
+	    	return 6
+	    case "Yuri Cantor":
+	    	return 298
+	    case "Hyoung Kim":
+	    	return 19
+	    case "James Birk":
+	    	return 298
+    	case "Jason Oliver":
+	    	return 81
+	    case "Mikhail Efroimson":
+	    	return 7
+	    case "Britton Sparks":
+	    	return 295
+	    case "Thomas Toker":
+	    	return 295
+	    case "Vadym Lipinsky":
+	    	return 287
+	    default:
+	    	fmt.Println("[MapProject] JIRA Assignee not found: ", jiraUserName)
+	    	return 299
+    }
+}
+
+
 // CreateComment takes the JiraItem's comment data and returns a ClubHouseCreateComment
 func (comment *JiraComment) CreateComment() ClubHouseCreateComment {
-	return ClubHouseCreateComment{Text: fmt.Sprintf("%s: %s", comment.Author, sanitize.HTML(comment.Comment)), CreatedAt: ParseJiraTimeStamp(comment.CreatedAtString)}
+	return ClubHouseCreateComment{
+		Text:		sanitize.HTML(comment.Comment),
+		CreatedAt:	ParseJiraTimeStamp(comment.CreatedAtString),
+		Author: 	MapUser(comment.Author),
+	}
 }
 
 // GetEpicLink returns the Epic Link of a Jira Item.

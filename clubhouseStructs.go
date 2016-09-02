@@ -19,6 +19,7 @@ type ClubHouseCreateEpic struct {
 type ClubHouseCreateComment struct {
 	Text      string    `json:"text"`
 	CreatedAt time.Time `json:"created_at"`
+	Author	  string	`json:"author_id"`
 }
 
 // ClubHouseCreateStory is the object sent to API to submit a Story, Tasks, & Comment
