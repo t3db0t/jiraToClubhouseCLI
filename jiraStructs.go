@@ -140,7 +140,16 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	projectID = MapProject(item.Assignee.Username)
 
 	// Map JIRA assignee to Clubhouse owner(s)
-	owners := []string{MapUser(item.Assignee.Username)}
+	// Leave array empty if username is unknown
+	// Must use "make" function to force empty array for correct JSON marshalling
+	ownerID := MapUser(item.Assignee.Username)
+	var owners []string
+	if ownerID != "" {
+		// owners := []string{ownerID}
+		owners = append(owners, ownerID)
+	} else {
+		owners = make([]string, 0)
+	}
 
 	// Map JIRA status to Clubhouse Workflow state
 	// cases break automatically, no fallthrough by default
@@ -193,58 +202,40 @@ func MapUser(jiraUserName string) string {
 	switch jiraUserName {
 	    case "loz":
 	        return "57c9ac5a-4762-46bc-bbfd-67d64bc8e7be"
-
 	    case "ted":
 	        return "570fd3d0-55a2-49f6-9352-2ddb51ef8dd1"
-
 	    case "bruce.woodson":
 	    	return "57c9a89c-d59d-4bad-aa9b-b5a0a51d8217"
-
 	    case "carlosc":
 	        return "57c9b22b-6bf4-460b-9778-764355a0bc28"
-
 	    case "pavlo.naumenko":
 	    	return "57c9c753-5ddc-41b2-93e7-9f4474d82380"
-	    
 	    case "yuchao.chen":
 	    	return "57c9b277-47b1-4277-a92a-364e07871c46"
-	    
 	    case "dmitriy":
 	    	return ""
-
 	    case "yuri.cantor":
 	    	return "57c9b19b-917a-457d-a4be-7a1d12990305"
-	    
 	    case "hyoung.kim":
 	    	return "57c9ab13-9a97-44a9-bfbe-2971cabcab9f"
-	    
 	    case "jamesb":
 	    	return "57c9c7ae-4f1b-4685-826c-26056923460e"
-    	
     	case "jason.oliver":
 	    	return "57680d04-f3f5-4dcc-bcd7-06cd79452398"
-	    
 	    case "mikhail":
 	    	return "576ad70f-0df0-4649-bbb7-aa48cb024c2f"
-	    
 	    case "britton.sparks":
 	    	return "578d49c3-b68f-4ca6-98bd-743545e8a8e9"
-	    
 	    case "thomast":
 	    	return "577d43f6-e069-417d-ba40-5704ba82dc7c"
-	    
 	    case "vadym.lipinsky":
 	    	return "57c9a83f-f360-4f01-a667-5eb632394ff1"
-
 	    case "zach.mihalko":
 	    	return ""
-
 	    case "gregmihalko":
 	    	return ""
-
 	    case "jeremy.leon":
 	    	return ""
-	    
 	    default:
 	    	fmt.Println("[MapUser] JIRA Assignee not found: ", jiraUserName)
 	    	return ""
