@@ -101,10 +101,10 @@ func main() {
 					return nil
 				}
 
-				if projectID == 0 {
-					fmt.Println("A projectID must be specified.")
-					return nil
-				}
+				// if projectID == 0 {
+				// 	fmt.Println("A projectID must be specified.")
+				// 	return nil
+				// }
 
 				err := UploadToClubhouse(jiraFile, int64(projectID), token, testMode)
 				if err != nil {
@@ -142,6 +142,7 @@ func UploadToClubhouse(jiraFile string, projectID int64, token string, testMode 
 		return err
 	}
 	data := export.GetDataForClubhouse(projectID)
+	fmt.Printf("Found %d epics and %d stories.\n\n", len(data.Epics), len(data.Stories))
 	
 	if !testMode{
 		fmt.Println("Sending data to Clubhouse...")
@@ -201,10 +202,13 @@ func SendData(token string, data ClubHouseData) error {
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode > 299 {
+			fmt.Println("--------- *** Request Failed")
 			fmt.Println("response Status:", resp.Status)
-			fmt.Println("response Headers:", resp.Header)
+			// fmt.Println("response Headers:", resp.Header)
+			fmt.Println("Request: ", story)
 			body, _ := ioutil.ReadAll(resp.Body)
 			fmt.Println("response Body:", string(body))
+			fmt.Println("---------")
 		}
 	}
 	return nil

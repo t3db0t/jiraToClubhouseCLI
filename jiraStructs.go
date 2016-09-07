@@ -180,7 +180,13 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	        state = 500000014
     }
 
-    fmt.Printf("Creating story from %s: JIRA username: %s | Project: %d | Status: %s\n\n", item.Key, item.Assignee.Username, projectID, item.Status)
+    requestor := MapUser(item.Reporter.Username)
+    if requestor == "" {
+    	// map to me if requestor not in Clubhouse
+    	requestor = MapUser("ted")
+    }
+
+    fmt.Printf("%s: JIRA Assignee: %s | Project: %d | Status: %s\n\n", item.Key, item.Assignee.Username, projectID, item.Status)
 
 	return ClubHouseCreateStory{
 		Comments:    	comments,
@@ -194,7 +200,7 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 		epicLink:    	item.GetEpicLink(),
 		WorkflowState:	state,
 		OwnerIDs:		owners,
-		RequestedBy:	MapUser(item.Reporter.Username),
+		RequestedBy:	requestor,
 	}
 }
 
@@ -213,7 +219,7 @@ func MapUser(jiraUserName string) string {
 	    case "yuchao.chen":
 	    	return "57c9b277-47b1-4277-a92a-364e07871c46"
 	    case "dmitriy":
-	    	return ""
+	    	return "57cecf9c-fcfd-4dfd-ad89-3335cc036a8b"
 	    case "yuri.cantor":
 	    	return "57c9b19b-917a-457d-a4be-7a1d12990305"
 	    case "hyoung.kim":
@@ -231,13 +237,13 @@ func MapUser(jiraUserName string) string {
 	    case "vadym.lipinsky":
 	    	return "57c9a83f-f360-4f01-a667-5eb632394ff1"
 	    case "zach.mihalko":
-	    	return ""
+	    	return "57cee406-2fcb-43b8-81e9-7f8e207b82f7"
 	    case "gregmihalko":
-	    	return ""
-	    case "jeremy.leon":
-	    	return ""
+	    	return "57cee2cd-8570-4447-83e8-6697bed35a99"
+	    case "brian.mandell":
+	    	return "57c9ceb8-a05e-4ee5-a6c2-6db2b89b6236"
 	    default:
-	    	fmt.Println("[MapUser] JIRA Assignee not found: ", jiraUserName)
+	    	fmt.Println("[MapUser] JIRA user not found: ", jiraUserName)
 	    	return ""
     }
 }
@@ -299,8 +305,15 @@ func MapProject(jiraUserName string) int64 {
 	    	return 318
 	    case "jeremy.leon":
 	    	return 287
+	    case "kamran":
+	    	return 6
+	    case "suresh":
+	    	return 19
+	    case "ericc":
+	    	return 295
+
 	    default:
-	    	fmt.Println("[MapProject] JIRA Assignee not found: ", jiraUserName)
+	    	fmt.Println("[MapProject] JIRA user not found: ", jiraUserName)
 	    	return 299
     }
 }
@@ -308,10 +321,21 @@ func MapProject(jiraUserName string) int64 {
 
 // CreateComment takes the JiraItem's comment data and returns a ClubHouseCreateComment
 func (comment *JiraComment) CreateComment() ClubHouseCreateComment {
+	commentText := sanitize.HTML(comment.Comment)
+	if commentText == "\n" {
+		commentText = "(empty)"
+	}
+	author := MapUser(comment.Author)
+	if author == "" {
+		// since we MUST have a comment author, make it me and prepend the actual username to the comment body
+		author = MapUser("ted")
+		commentText = comment.Author + ": " + commentText
+	}
+
 	return ClubHouseCreateComment{
-		Text:		sanitize.HTML(comment.Comment),
+		Text:		commentText,
 		CreatedAt:	ParseJiraTimeStamp(comment.CreatedAtString),
-		Author: 	MapUser(comment.Author),
+		Author: 	author,
 	}
 }
 
