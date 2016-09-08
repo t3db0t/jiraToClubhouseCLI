@@ -59,8 +59,17 @@ type JiraComment struct {
 	ID              string `xml:"id,attr"`
 }
 
+func GetUserInfo(userMaps []userMap, jiraUsername string) (CHProjectID int, CHID string) {
+	for _, u := range userMaps {
+		if u.JiraUsername == jiraUsername {
+			return u.CHProjectID, u.CHID
+		}
+	}
+	return 0, ""
+}
+
 //GetDataForClubhouse will take the data from the XML and translate it into a format for sending to Clubhouse
-func (je *JiraExport) GetDataForClubhouse(projectID int64) ClubHouseData {
+func (je *JiraExport) GetDataForClubhouse(userMaps []userMap) ClubHouseData {
 	epics := []JiraItem{}
 	tasks := []JiraItem{}
 	stories := []JiraItem{}
@@ -93,7 +102,7 @@ func (je *JiraExport) GetDataForClubhouse(projectID int64) ClubHouseData {
 	}
 
 	for _, item := range stories {
-		chStories = append(chStories, item.CreateStory(projectID))
+		chStories = append(chStories, item.CreateStory(userMaps))
 	}
 
 	// storyMap is used to link the JiraItem's key to its index in the chStories slice. This is then used to assign subtasks properly
@@ -120,13 +129,13 @@ func (item *JiraItem) CreateTask() ClubHouseCreateTask {
 }
 
 // CreateStory returns a ClubHouseCreateStory from the JiraItem
-func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
+func (item *JiraItem) CreateStory(userMaps []userMap) ClubHouseCreateStory {
 	// fmt.Println("assignee: ", item.Assignee, "reporter: ", item.Reporter)
 	// return ClubHouseCreateStory{}
 
 	comments := []ClubHouseCreateComment{}
 	for _, c := range item.Comments {
-		comments = append(comments, c.CreateComment())
+		comments = append(comments, c.CreateComment(userMaps))
 	}
 
 	labels := []ClubHouseCreateLabel{}
@@ -137,12 +146,13 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	labels = append(labels, ClubHouseCreateLabel{Name: "JIRA"})
 
 	// Overwrite supplied Project ID
-	projectID = MapProject(item.Assignee.Username)
+	projectID := MapProject(userMaps, item.Assignee.Username)
+	// projectID, ownerID := GetUserInfo(userMaps, item.Assignee.Username)
 
 	// Map JIRA assignee to Clubhouse owner(s)
 	// Leave array empty if username is unknown
 	// Must use "make" function to force empty array for correct JSON marshalling
-	ownerID := MapUser(item.Assignee.Username)
+	ownerID := MapUser(userMaps, item.Assignee.Username)
 	var owners []string
 	if ownerID != "" {
 		// owners := []string{ownerID}
@@ -180,10 +190,12 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	        state = 500000014
     }
 
-    requestor := MapUser(item.Reporter.Username)
+    requestor := MapUser(userMaps, item.Reporter.Username)
+    // _, requestor := GetUserInfo(userMaps, item.Reporter.Username)
     if requestor == "" {
     	// map to me if requestor not in Clubhouse
-    	requestor = MapUser("ted")
+    	requestor = MapUser(userMaps, "ted")
+    	// _, requestor = GetUserInfo(userMaps, "ted")
     }
 
     fmt.Printf("%s: JIRA Assignee: %s | Project: %d | Status: %s\n\n", item.Key, item.Assignee.Username, projectID, item.Status)
@@ -194,7 +206,7 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 		Description: 	sanitize.HTML(item.Description),
 		Labels:      	labels,
 		Name:        	sanitize.HTML(item.Summary),
-		ProjectID:   	projectID,
+		ProjectID:   	int64(projectID),
 		StoryType:   	item.GetClubhouseType(),
 		key:         	item.Key,
 		epicLink:    	item.GetEpicLink(),
@@ -204,131 +216,39 @@ func (item *JiraItem) CreateStory(projectID int64) ClubHouseCreateStory {
 	}
 }
 
-func MapUser(jiraUserName string) string {
-	switch jiraUserName {
-	    case "loz":
-	        return "57c9ac5a-4762-46bc-bbfd-67d64bc8e7be"
-	    case "ted":
-	        return "570fd3d0-55a2-49f6-9352-2ddb51ef8dd1"
-	    case "bruce.woodson":
-	    	return "57c9a89c-d59d-4bad-aa9b-b5a0a51d8217"
-	    case "carlosc":
-	        return "57c9b22b-6bf4-460b-9778-764355a0bc28"
-	    case "pavlo.naumenko":
-	    	return "57c9c753-5ddc-41b2-93e7-9f4474d82380"
-	    case "yuchao.chen":
-	    	return "57c9b277-47b1-4277-a92a-364e07871c46"
-	    case "dmitriy":
-	    	return "57cecf9c-fcfd-4dfd-ad89-3335cc036a8b"
-	    case "yuri.cantor":
-	    	return "57c9b19b-917a-457d-a4be-7a1d12990305"
-	    case "hyoung.kim":
-	    	return "57c9ab13-9a97-44a9-bfbe-2971cabcab9f"
-	    case "jamesb":
-	    	return "57c9c7ae-4f1b-4685-826c-26056923460e"
-    	case "jason.oliver":
-	    	return "57680d04-f3f5-4dcc-bcd7-06cd79452398"
-	    case "mikhail":
-	    	return "576ad70f-0df0-4649-bbb7-aa48cb024c2f"
-	    case "britton.sparks":
-	    	return "578d49c3-b68f-4ca6-98bd-743545e8a8e9"
-	    case "thomast":
-	    	return "577d43f6-e069-417d-ba40-5704ba82dc7c"
-	    case "vadym.lipinsky":
-	    	return "57c9a83f-f360-4f01-a667-5eb632394ff1"
-	    case "zach.mihalko":
-	    	return "57cee406-2fcb-43b8-81e9-7f8e207b82f7"
-	    case "gregmihalko":
-	    	return "57cee2cd-8570-4447-83e8-6697bed35a99"
-	    case "brian.mandell":
-	    	return "57c9ceb8-a05e-4ee5-a6c2-6db2b89b6236"
-	    default:
-	    	fmt.Println("[MapUser] JIRA user not found: ", jiraUserName)
-	    	return ""
-    }
+func MapUser(userMaps []userMap, jiraUserName string) string {
+	_, chUserID := GetUserInfo(userMaps, jiraUserName)
+
+	if chUserID == "" {
+		fmt.Println("[MapUser] JIRA user not found: ", jiraUserName)
+    	return ""
+	}
+
+	return chUserID
 }
 
-/* Overwrite supplied Project ID
-	   if assigned to loz, Frontend-Import
-	   if item.Summary starts with "FE: ", Frontend-Import
-	   if item.Summary contains "Touch", Touch
-	   etc
+func MapProject(userMaps []userMap, jiraUserName string) int {
+	projectID, _ := GetUserInfo(userMaps, jiraUserName)
 
-	- Frontend: 5
-	- Backend: 6
-	- Gateway: 7
-	- Touch: 19
-	- Android App: 277
-	- New Products (Ted): 81
-	- QA: 295
-	- QA Automation: 287
-	- iOS App: 246
-	- Infrastructure: 298
-	- Misc: 299
-	*/
+	if projectID == 0 {
+		fmt.Println("[MapProject] JIRA user not found: ", jiraUserName)
+    	return 299
+	}
 
-func MapProject(jiraUserName string) int64 {
-	switch jiraUserName {
-	    case "loz":
-	    	return 5
-	    case "ted":
-	    	return 81
-	    case "bruce.woodson":
-	    	return 6
-	    case "carlosc":
-	        return 7
-	    case "pavlo.naumenko":
-	    	return 246
-	    case "yuchao.chen":
-	    	return 5
-	    case "dmitriy":
-	    	return 6
-	    case "yuri.cantor":
-	    	return 298
-	    case "hyoung.kim":
-	    	return 19
-	    case "jamesb":
-	    	return 298
-    	case "jason.oliver":
-	    	return 81
-	    case "mikhail":
-	    	return 7
-	    case "britton.sparks":
-	    	return 295
-	    case "thomast":
-	    	return 295
-	    case "vadym.lipinsky":
-	    	return 287
-	    case "zach.mihalko":
-	    	return 318
-	    case "gregmihalko":
-	    	return 318
-	    case "jeremy.leon":
-	    	return 287
-	    case "kamran":
-	    	return 6
-	    case "suresh":
-	    	return 19
-	    case "ericc":
-	    	return 295
-
-	    default:
-	    	fmt.Println("[MapProject] JIRA user not found: ", jiraUserName)
-	    	return 299
-    }
+	return projectID
 }
 
 
 // CreateComment takes the JiraItem's comment data and returns a ClubHouseCreateComment
-func (comment *JiraComment) CreateComment() ClubHouseCreateComment {
+func (comment *JiraComment) CreateComment(userMaps []userMap) ClubHouseCreateComment {
 	commentText := sanitize.HTML(comment.Comment)
 	if commentText == "\n" {
 		commentText = "(empty)"
 	}
-	author := MapUser(comment.Author)
+	author := MapUser(userMaps, comment.Author)
 	if author == "" {
 		// since we MUST have a comment author, make it me and prepend the actual username to the comment body
-		author = MapUser("ted")
+		author = MapUser(userMaps, "ted")
 		commentText = comment.Author + ": " + commentText
 	}
 

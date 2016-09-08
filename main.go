@@ -33,9 +33,9 @@ func main() {
 					Name:  "in, i",
 					Usage: "The Jira XML file you want to read in.",
 				},
-				cli.IntFlag{
-					Name:  "projectID, p",
-					Usage: "The Clubhouse project ID you want these items imported for",
+				cli.StringFlag{
+					Name: "map, m",
+					Usage: "The JSON file containing user mappings",
 				},
 				cli.StringFlag{
 					Name:  "out, o",
@@ -45,7 +45,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				jiraFile := c.String("in")
 				exportFile := c.String("out")
-				projectID := c.Int("projectID")
+				mapFile := c.String("map")
 
 				if jiraFile == "" {
 					fmt.Println("An input file must be specified.")
@@ -57,11 +57,18 @@ func main() {
 					return nil
 				}
 
-				if projectID == 0 {
-					fmt.Println("A projectID must be specified.")
+				if mapFile == "" {
+					fmt.Println("A user map JSON file must be specified.")
 					return nil
 				}
-				err := ExportToJSON(jiraFile, int64(projectID), exportFile)
+
+				userMaps, err := GetUserMap(mapFile)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+
+				err = ExportToJSON(jiraFile, userMaps, exportFile)
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -77,10 +84,6 @@ func main() {
 					Name:  "in, i",
 					Usage: "The Jira XML file you want to read in.",
 				},
-				// cli.IntFlag{
-				// 	Name:  "projectID, p",
-				// 	Usage: "The project ID you want these items imported for",
-				// },
 				cli.StringFlag{
 					Name: "map, m",
 					Usage: "The JSON file containing user mappings",
@@ -98,7 +101,6 @@ func main() {
 			Action: func(c *cli.Context) error {
 				jiraFile := c.String("in")
 				token := c.String("token")
-				// projectID := c.Int("projectID")
 				mapFile := c.String("map")
 				testMode := c.Bool("test")
 
@@ -123,9 +125,7 @@ func main() {
 					return err
 				}
 
-				fmt.Println(userMaps)
-
-				err = UploadToClubhouse(jiraFile, 0, token, testMode)
+				err = UploadToClubhouse(jiraFile, userMaps, token, testMode)
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -160,12 +160,12 @@ func GetUserMap(mapFile string) ([]userMap, error){
 }
 
 // ExportToJSON will import the XML and then export the data to the file specified.
-func ExportToJSON(jiraFile string, projectID int64, exportFile string) error {
+func ExportToJSON(jiraFile string, userMaps []userMap, exportFile string) error {
 	export, err := GetDataFromXMLFile(jiraFile)
 	if err != nil {
 		return err
 	}
-	data, err := json.Marshal(export.GetDataForClubhouse(projectID))
+	data, err := json.Marshal(export.GetDataForClubhouse(userMaps))
 	if err != nil {
 		return err
 	}
@@ -177,12 +177,12 @@ func ExportToJSON(jiraFile string, projectID int64, exportFile string) error {
 }
 
 // UploadToClubhouse will import the XML, and upload it to Clubhouse
-func UploadToClubhouse(jiraFile string, projectID int64, token string, testMode bool) error {
+func UploadToClubhouse(jiraFile string, userMaps []userMap, token string, testMode bool) error {
 	export, err := GetDataFromXMLFile(jiraFile)
 	if err != nil {
 		return err
 	}
-	data := export.GetDataForClubhouse(projectID)
+	data := export.GetDataForClubhouse(userMaps)
 	fmt.Printf("Found %d epics and %d stories.\n\n", len(data.Epics), len(data.Stories))
 	
 	if !testMode{
