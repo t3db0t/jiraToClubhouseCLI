@@ -12,6 +12,12 @@ import (
 	"github.com/urfave/cli"
 )
 
+type userMap struct {
+	JiraUsername	string
+	CHProjectID	int
+	CHID		string
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "Jira to Clubhouse"
@@ -71,9 +77,13 @@ func main() {
 					Name:  "in, i",
 					Usage: "The Jira XML file you want to read in.",
 				},
-				cli.IntFlag{
-					Name:  "projectID, p",
-					Usage: "The project ID you want these items imported for",
+				// cli.IntFlag{
+				// 	Name:  "projectID, p",
+				// 	Usage: "The project ID you want these items imported for",
+				// },
+				cli.StringFlag{
+					Name: "map, m",
+					Usage: "The JSON file containing user mappings",
 				},
 				cli.StringFlag{
 					Name:  "token, t",
@@ -88,25 +98,34 @@ func main() {
 			Action: func(c *cli.Context) error {
 				jiraFile := c.String("in")
 				token := c.String("token")
-				projectID := c.Int("projectID")
+				// projectID := c.Int("projectID")
+				mapFile := c.String("map")
 				testMode := c.Bool("test")
 
 				if jiraFile == "" {
-					fmt.Println("An input file must be specified.")
+					fmt.Println("An input XML file must be specified.")
 					return nil
 				}
 
-				if token == "" {
+				if token == "" && !testMode {
 					fmt.Println("A token must be specified.")
 					return nil
 				}
 
-				// if projectID == 0 {
-				// 	fmt.Println("A projectID must be specified.")
-				// 	return nil
-				// }
+				if mapFile == "" {
+					fmt.Println("A user map JSON file must be specified.")
+					return nil
+				}
 
-				err := UploadToClubhouse(jiraFile, int64(projectID), token, testMode)
+				userMaps, err := GetUserMap(mapFile)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+
+				fmt.Println(userMaps)
+
+				err = UploadToClubhouse(jiraFile, 0, token, testMode)
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -116,6 +135,28 @@ func main() {
 		},
 	}
 	app.Run(os.Args)
+}
+
+func GetUserMap(mapFile string) ([]userMap, error){
+	jsonFile, err := os.Open(mapFile)
+	if err != nil {
+		return []userMap{}, err
+	}
+
+	defer jsonFile.Close()
+	JSONData, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return []userMap{}, err
+	}
+
+	// userMaps := []userMap
+	var userMaps []userMap
+	err = json.Unmarshal(JSONData, &userMaps)
+	if err != nil {
+		return []userMap{}, err
+	}
+
+	return userMaps, nil
 }
 
 // ExportToJSON will import the XML and then export the data to the file specified.
