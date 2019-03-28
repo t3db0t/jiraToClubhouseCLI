@@ -26,6 +26,9 @@ type ClubHouseCreateComment struct {
 type ClubHouseCreateStory struct {
 	Comments    	[]ClubHouseCreateComment `json:"comments"`
 	CreatedAt   	time.Time                `json:"created_at"`
+	UpdatedAt   	time.Time                `json:"updated_at"`
+	CompletedAt   	time.Time                `json:"completed_at_override"`
+	StartedAt   	time.Time                `json:"started_at_override"`
 	Description 	string                   `json:"description"`
 	Estimate    	int64                    `json:"estimate"`
 	EpicID      	int64                    `json:"epic_id,omitempty"`

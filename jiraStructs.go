@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"strconv"
 
 	"github.com/kennygrant/sanitize"
 )
@@ -43,6 +44,8 @@ type JiraItem struct {
 	CustomFields []JiraCustomField `xml:"customfields>customfield"`
 
 	epicLink string
+	UpdatedAtString string   		`xml:"updated"`
+	ResolvedAtString string   		`xml:"resolved"`
 }
 
 //JiraCustomField is the information for custom fields. Right now the only one used is the Epic Link
@@ -142,8 +145,16 @@ func (item *JiraItem) CreateStory(userMaps []userMap) ClubHouseCreateStory {
 	for _, label := range item.Labels {
 		labels = append(labels, ClubHouseCreateLabel{Name: strings.ToLower(label)})
 	}
+
+	// Add a label for tracking jira sprints in 
+	lastSprint := item.GetLastSprint()
+
+	if lastSprint != "" {
+		labels = append(labels, ClubHouseCreateLabel{Name: strings.ToLower(lastSprint)})
+	}
+
 	// Adding special label that indicates that it was imported from JIRA
-	labels = append(labels, ClubHouseCreateLabel{Name: "JIRA"})
+	labels = append(labels, ClubHouseCreateLabel{Name: "jira"})
 
 	// Overwrite supplied Project ID
 	projectID := MapProject(userMaps, item.Assignee.Username)
@@ -203,6 +214,9 @@ func (item *JiraItem) CreateStory(userMaps []userMap) ClubHouseCreateStory {
 	return ClubHouseCreateStory{
 		Comments:    	comments,
 		CreatedAt:   	ParseJiraTimeStamp(item.CreatedAtString),
+		UpdatedAt:   	ParseJiraTimeStamp(item.UpdatedAtString),
+		CompletedAt:   	ParseJiraTimeStamp(item.ResolvedAtString),
+		StartedAt:   	ParseJiraTimeStamp(item.ResolvedAtString),
 		Description: 	sanitize.HTML(item.Description),
 		Labels:      	labels,
 		Name:        	sanitize.HTML(item.Summary),
@@ -213,6 +227,7 @@ func (item *JiraItem) CreateStory(userMaps []userMap) ClubHouseCreateStory {
 		WorkflowState:	state,
 		OwnerIDs:		owners,
 		RequestedBy:	requestor,
+		Estimate: 		item.GetEstimate(),
 	}
 }
 
@@ -264,6 +279,33 @@ func (item *JiraItem) GetEpicLink() string {
 	for _, cf := range item.CustomFields {
 		if cf.FieldName == "Epic Link" {
 			return cf.FieldVales[0]
+		}
+	}
+	return ""
+}
+
+// GetEstimate returns the estimate of a Jira Item.
+func (item *JiraItem) GetEstimate() int64 {
+	for _, cf := range item.CustomFields {
+		fmt.Println(cf.FieldName)
+		if cf.FieldName == "Story point estimate" {
+			fmt.Println(cf.FieldVales[0])
+			if i, err := strconv.ParseFloat(cf.FieldVales[0], 64); err == nil {
+				fmt.Println(int64(i))
+				return int64(i)
+			}
+			
+		}
+	}
+	return 0
+}
+
+// GetLastSprint returns the latest sprint a Jira Item was in.
+func (item *JiraItem) GetLastSprint() string {
+	for _, cf := range item.CustomFields {
+		fmt.Println(cf.FieldName)
+		if cf.FieldName == "Sprint" && len(cf.FieldVales) > 0 {
+			return cf.FieldVales[len(cf.FieldVales)-1]
 		}
 	}
 	return ""
