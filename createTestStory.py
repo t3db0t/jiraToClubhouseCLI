@@ -12,7 +12,7 @@ try:
 		'project_id':299,
 		'owner_ids':[]
 	}
-	r = requests.post('https://api.clubhouse.io/api/v1/stories', params={'token':token}, data=data)
+	r = requests.post('https://api.clubhouse.io/api/v2/stories', params={'token':token}, data=data)
 	print r.text()
 except RequestException as err:
 	print err

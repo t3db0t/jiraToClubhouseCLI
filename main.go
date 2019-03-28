@@ -257,7 +257,7 @@ func SendData(token string, data ClubHouseData) error {
 
 // GetURL will get the use the REST API v1 address, the resource provided and the API token to get the URL for transactions
 func GetURL(kind string, token string) string {
-	return fmt.Sprintf("%s%s?token=%s", "https://api.clubhouse.io/api/v1/", kind, token)
+	return fmt.Sprintf("%s%s?token=%s", "https://api.clubhouse.io/api/v2/", kind, token)
 }
 
 // GetDataFromXMLFile will Unmarshal the XML file into the objects used by the application.

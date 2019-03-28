@@ -77,7 +77,7 @@ switch item.Status {
 
 To get your Clubhouse workflow state IDs, you can look at `curl -X GET \
   -H "Content-Type: application/json" \
-  -L "https://api.clubhouse.io/api/v1/workflows?token=$CLUBHOUSE_API_TOKEN"`
+  -L "https://api.clubhouse.io/api/v2/workflows?token=$CLUBHOUSE_API_TOKEN"`
 
 ## Export
 To see what the data will look like (as JSON).

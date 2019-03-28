@@ -7,7 +7,7 @@ import json
 token = sys.argv[1]
 
 try:
-	r = requests.get('https://api.clubhouse.io/api/v1/epics', params={'token':token})
+	r = requests.get('https://api.clubhouse.io/api/v2/epics', params={'token':token})
 except RequestException as err:
 	print err
 
@@ -19,7 +19,7 @@ print "Found %d epics" % len(epic_ids)
 for eid in epic_ids:
 	try:
 		search = {'epic_id':eid}
-		r = requests.post('https://api.clubhouse.io/api/v1/stories/search', params={'token':token}, data=search)
+		r = requests.post('https://api.clubhouse.io/api/v2/stories/search', params={'token':token}, data=search)
 	except RequestException as err:
 		print err
 
@@ -28,6 +28,6 @@ for eid in epic_ids:
 
 	if(len(stories) == 0):
 		# delete this epic
-		url = 'https://api.clubhouse.io/api/v1/epics/%d' % eid
+		url = 'https://api.clubhouse.io/api/v2/epics/%d' % eid
 		print "Deleting epic #%d" % eid
 		r = requests.delete(url, params={'token':token})
