@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/urfave/cli"
 )
@@ -22,7 +23,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Jira to Clubhouse"
 	app.Usage = "Jira To Clubhouse"
-	app.Version = "0.0.4"
+	app.Version = "0.0.5"
 	app.Commands = []cli.Command{
 		{
 			Name:    "export",
@@ -251,6 +252,9 @@ func SendData(token string, data ClubHouseData) error {
 			fmt.Println("response Body:", string(body))
 			fmt.Println("---------")
 		}
+
+		// CH has a 200 requests / min rate limit
+		time.Sleep(350 * time.Millisecond)
 	}
 	return nil
 }
