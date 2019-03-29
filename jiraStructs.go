@@ -216,7 +216,7 @@ func (item *JiraItem) CreateStory(userMaps []userMap) ClubHouseCreateStory {
 		CreatedAt:   	ParseJiraTimeStamp(item.CreatedAtString),
 		UpdatedAt:   	ParseJiraTimeStamp(item.UpdatedAtString),
 		CompletedAt:   	ParseJiraTimeStamp(item.ResolvedAtString),
-		StartedAt:   	ParseJiraTimeStamp(item.ResolvedAtString),
+		StartedAt:   	ParseJiraTimeStampWithDelta(item.ResolvedAtString, -1),
 		Description: 	sanitize.HTML(item.Description),
 		Labels:      	labels,
 		Name:        	sanitize.HTML(item.Summary),
@@ -320,11 +320,16 @@ func (item *JiraItem) GetClubhouseType() string {
 }
 
 // ParseJiraTimeStamp parses the format in the XML using Go's magical timestamp.
-func ParseJiraTimeStamp(dateString string) time.Time {
+func ParseJiraTimeStampWithDelta(dateString string, daysToAdd int) time.Time {
 	format := "Mon, 2 Jan 2006 15:04:05 -0700"
 	t, err := time.Parse(format, dateString)
 	if err != nil {
-		return time.Now()
+		return time.Now().AddDate(0, 0, daysToAdd)
 	}
-	return t
+	return t.AddDate(0, 0, daysToAdd)
+}
+
+// ParseJiraTimeStamp parses the format in the XML using Go's magical timestamp.
+func ParseJiraTimeStamp(dateString string) time.Time {
+	return ParseJiraTimeStampWithDelta(dateString, 0)
 }
