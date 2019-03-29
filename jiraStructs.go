@@ -287,11 +287,8 @@ func (item *JiraItem) GetEpicLink() string {
 // GetEstimate returns the estimate of a Jira Item.
 func (item *JiraItem) GetEstimate() int64 {
 	for _, cf := range item.CustomFields {
-		fmt.Println(cf.FieldName)
 		if cf.FieldName == "Story point estimate" {
-			fmt.Println(cf.FieldVales[0])
 			if i, err := strconv.ParseFloat(cf.FieldVales[0], 64); err == nil {
-				fmt.Println(int64(i))
 				return int64(i)
 			}
 			
@@ -303,7 +300,6 @@ func (item *JiraItem) GetEstimate() int64 {
 // GetLastSprint returns the latest sprint a Jira Item was in.
 func (item *JiraItem) GetLastSprint() string {
 	for _, cf := range item.CustomFields {
-		fmt.Println(cf.FieldName)
 		if cf.FieldName == "Sprint" && len(cf.FieldVales) > 0 {
 			return cf.FieldVales[len(cf.FieldVales)-1]
 		}
