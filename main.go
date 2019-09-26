@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/urfave/cli"
 )
@@ -22,7 +23,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Jira to Clubhouse"
 	app.Usage = "Jira To Clubhouse"
-	app.Version = "0.0.4"
+	app.Version = "0.0.5"
 	app.Commands = []cli.Command{
 		{
 			Name:    "export",
@@ -251,13 +252,16 @@ func SendData(token string, data ClubHouseData) error {
 			fmt.Println("response Body:", string(body))
 			fmt.Println("---------")
 		}
+
+		// CH has a 200 requests / min rate limit
+		time.Sleep(350 * time.Millisecond)
 	}
 	return nil
 }
 
 // GetURL will get the use the REST API v1 address, the resource provided and the API token to get the URL for transactions
 func GetURL(kind string, token string) string {
-	return fmt.Sprintf("%s%s?token=%s", "https://api.clubhouse.io/api/v1/", kind, token)
+	return fmt.Sprintf("%s%s?token=%s", "https://api.clubhouse.io/api/v2/", kind, token)
 }
 
 // GetDataFromXMLFile will Unmarshal the XML file into the objects used by the application.

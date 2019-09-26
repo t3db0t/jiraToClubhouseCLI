@@ -26,3 +26,5 @@ _testmain.go
 *.xml
 *.json
 notes.txt
+venv
+SearchRequest.xml*

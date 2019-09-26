@@ -8,7 +8,7 @@ token = sys.argv[1]
 
 try:
 	search = {'archived':'true'}
-	r = requests.post('https://api.clubhouse.io/api/v1/stories/search', params={'token':token}, data=search)
+	r = requests.post('https://api.clubhouse.io/api/v2/stories/search', params={'token':token}, data=search)
 except RequestException as err:
 	print err
 
@@ -20,7 +20,7 @@ print "Found %d archived stories" % len(archivedStories)
 
 for story in archivedStories:
 	print 'Deleting Story #%d' % story['id']
-	url = 'https://api.clubhouse.io/api/v1/stories/%d' % story['id']
+	url = 'https://api.clubhouse.io/api/v2/stories/%d' % story['id']
 	try:
 		r = requests.delete(url, params={'token':token})
 	except RequestException as err:
